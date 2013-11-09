@@ -8,6 +8,9 @@ GZIP=gzip
 TAR=tar
 GPG=gpg
 
+#ARCH=ia32
+ARCH=x86_64
+
 all: injcode
 
 injcode: injcode.o \
@@ -16,10 +19,10 @@ retty.o \
 testmodule.o \
 closemodule.o \
 dup2module.o \
-shellcode-test-linux-ia32.o \
-shellcode-close-linux-ia32.o \
-shellcode-dup2-linux-ia32.o \
-shellcode-retty-linux-ia32.o
+shellcode-test-linux-$(ARCH).o \
+shellcode-close-linux-$(ARCH).o \
+shellcode-dup2-linux-$(ARCH).o \
+shellcode-retty-linux-$(ARCH).o
 	$(CXX) $(CXXFLAGS) -o $@ $^ -lutil
 
 injcode-%.tar.gz:
@@ -30,7 +33,7 @@ injcode-%.tar.gz:
 	$(GPG) -b -a $@
 
 pt:
-	g++ -Wall -W -g -o pt pt.cc shellcode-linux-ia32.S -lutil
+	g++ -Wall -W -g -o pt pt.cc shellcode-linux-$(ARCH).S -lutil
 b.s:
 	gcc -c -g -Wa,-a,-ad b.c > b.lst
 
