@@ -1,19 +1,20 @@
 #include "ErrHandling.h"
 
 #include <vector>
+#include <sys/user.h>
 
 class Inject: public ErrHandling {
 public:
         typedef unsigned long ptr_t;
-        struct user_regs_struct {
-                long ebx, ecx, edx, esi, edi, ebp, eax;
-                unsigned short ds, __ds, es, __es;
-                unsigned short fs, __fs, gs, __gs;
-                long orig_eax, eip;
-                unsigned short cs, __cs;
-                long eflags, esp;
-                unsigned short ss, __ss;
-        };
+        // struct user_regs_struct {
+        //         long ebx, ecx, edx, esi, edi, ebp, eax;
+        //         unsigned short ds, __ds, es, __es;
+        //         unsigned short fs, __fs, gs, __gs;
+        //         long orig_eax, eip;
+        //         unsigned short cs, __cs;
+        //         long eflags, esp;
+        //         unsigned short ss, __ss;
+        // };
 protected:
         int pid;
         bool attached;
@@ -21,9 +22,7 @@ protected:
         std::string argv0;
 
         bool injected;
-        ptr_t codebase;
-        ptr_t database;
-        int pagesize;
+        long pagesize;
         struct user_regs_struct oldregs;
 
         std::vector<char> olddatapage;

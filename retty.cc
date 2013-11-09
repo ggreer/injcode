@@ -240,7 +240,7 @@ Retty::Retty(Inject &injector)
                 if (options.verbose > 1) {
                         printf("Setting up connect struct (size 12) at 24\n");
                 }
-                int socketcall_connect[] = { 0, // to be filled in
+                Inject::ptr_t socketcall_connect[] = { 0, // to be filled in
                                              injector.dataBase() + 36,
                                              sizeof(struct sockaddr_un) };
                 memcpy(&data[24],
@@ -248,7 +248,7 @@ Retty::Retty(Inject &injector)
                        sizeof(socketcall_connect));
 
                 if (options.verbose > 1) {
-                        printf("Setting up connect sockaddr (size %d) at 36\n",
+                        printf("Setting up connect sockaddr (size %lu) at 36\n",
                                sizeof(struct sockaddr_un));
                 }
                 // FIXME: name of socket
@@ -260,14 +260,14 @@ Retty::Retty(Inject &injector)
 
         // recvmsg() struct @ 144
         {
-                int socketcall_recvmsg[] = { 0, // to be filled in
+                Inject::ptr_t socketcall_recvmsg[] = { 0, // to be filled in
                                              injector.dataBase() + 160, // msg
                                              0 };
                 memcpy(&data[144],
                        &socketcall_recvmsg,
                        sizeof(socketcall_recvmsg));
 
-                int data_msg[] = { 0,0, // name
+                Inject::ptr_t data_msg[] = { 0,0, // name
                                    injector.dataBase() + 188, 1, // iov
                                    injector.dataBase() + 196, 24, // control
                                    0,   // flags
@@ -276,7 +276,7 @@ Retty::Retty(Inject &injector)
                        &data_msg,
                        sizeof(data_msg));
 
-                int data_iovec[] = { injector.dataBase() + 220, 1};
+                Inject::ptr_t data_iovec[] = { injector.dataBase() + 220, 1};
                 memcpy(&data[188],
                        &data_iovec,
                        sizeof(data_iovec));
@@ -292,7 +292,7 @@ Retty::Retty(Inject &injector)
         size_t s = (Inject::ptr_t)shellcodeRettyEnd
                 - (Inject::ptr_t)shellcodeRetty;
         if (options.verbose) {
-                printf("Shellcode size is %d\n", s);
+                printf("Shellcode size is %lu\n", s);
         }
         memcpy(code, (char*)shellcodeRetty, s);
 
@@ -331,6 +331,10 @@ Retty::run()
                 }
 
                 nfds = poll(fds, 3, -1);
+
+                if (nfds < 3) {
+                        printf("Not enough file descriptors!\n");
+                }
 
                 if (fds[0].revents & POLLHUP) {
                         // process died/detached from terminal

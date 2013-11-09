@@ -4,6 +4,7 @@
 #include <sys/ptrace.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 
 #include "inject.h"
@@ -54,7 +55,7 @@ Inject::attach()
                                            "attach");
                 }
 
-                pagesize = 4096; // FIXME: find this
+                pagesize = getpagesize();
                 
                 // FIXME: needed?
                 if (0 > kill(pid, SIGCONT)) {
@@ -113,14 +114,14 @@ Inject::ptr_t
 Inject::codeBase()
 {
         attach();
-        return oldregs.eip & ~(pagesize-1);
+        return oldregs.rip & ~(pagesize-1);
 }
 
 Inject::ptr_t
 Inject::dataBase()
 {
         attach();
-        return oldregs.esp & ~(pagesize-1);
+        return oldregs.rsp & ~(pagesize-1);
 }
 
 
@@ -143,10 +144,10 @@ Inject::inject(void *code, void *data)
                                    PTRACE_GETREGS,
                                    "");
         }
-        newregs.eip = codeBase();
-        newregs.eax = codeBase();
-        newregs.ebp = dataBase();
-        newregs.esp = dataBase() + pageSize() - wordSize();
+        newregs.rip = codeBase();
+        newregs.rax = codeBase();
+        newregs.rbp = dataBase();
+        newregs.rsp = dataBase() + pageSize() - wordSize();
 
         if (ptrace(PTRACE_SETREGS, pid, NULL, &newregs)) {
                 throw ErrSysPtrace("Inject::inject",
@@ -193,7 +194,7 @@ Inject::run()
                         if (0) {
                                 printf("%lx .. %p .. %lx\n",
                                        codeBase(),
-                                       (void*)regs.eip,
+                                       (void*)regs.rip,
                                        codeBase() + pageSize());
                         }
                 }
@@ -201,9 +202,9 @@ Inject::run()
                 if (ptrace(PTRACE_GETREGS, pid, NULL, &regs)) {
                         perror("getregs");
                 }
-        } while(regs.eip != (long)(codeBase()  + pageSize()));
-        if (regs.eax) {
-                printf("Shellcode returned non-null: %ld\n", regs.eax);
+        } while(regs.rip != (long)(codeBase()  + pageSize()));
+        if (regs.rax) {
+                printf("Shellcode returned non-null: %lld\n", regs.rax);
                 dumpregs();
         }
 }
@@ -225,25 +226,25 @@ Inject::uninject()
 }
 
 void
-Inject::dumpregs(bool onlyIfEAX)
+Inject::dumpregs(bool onlyIfrax)
 {
         struct user_regs_struct regs;
         if (ptrace(PTRACE_GETREGS, pid, NULL, &regs)) {
                 perror("getregs");
         }
-        if (onlyIfEAX && !regs.eax) {
+        if (onlyIfrax && !regs.rax) {
                 return;
         }
         printf("----------------------------\n");
-        printf("%%eip : 0x%.8lx\n", regs.eip);
-        printf("%%eax : 0x%.8lx  %ld %s\n", regs.eax, regs.eax,
-               strerror(-regs.eax));
-        printf("%%ebx : 0x%.8lx  %ld\n", regs.ebx, regs.ebx);
-        printf("%%ecx : 0x%.8lx\n", regs.ecx);
-        printf("%%edx : 0x%.8lx\n", regs.edx);
-        printf("%%esi : 0x%.8lx\n", regs.esi);
-        printf("%%edi : 0x%.8lx\n", regs.edi);
-        printf("%%ebp : 0x%.8lx\n", regs.ebp);
-        printf("%%orig_eax : 0x%.8lx\n", regs.orig_eax);
-        printf("%%esp : 0x%.8lx\n", regs.esp);
+        printf("%%rip : 0x%.8llx\n", regs.rip);
+        printf("%%rax : 0x%.8llx  %lld %s\n", regs.rax, regs.rax,
+               strerror(-regs.rax));
+        printf("%%rbx : 0x%.8llx  %lld\n", regs.rbx, regs.rbx);
+        printf("%%rcx : 0x%.8llx\n", regs.rcx);
+        printf("%%rdx : 0x%.8llx\n", regs.rdx);
+        printf("%%rsi : 0x%.8llx\n", regs.rsi);
+        printf("%%rdi : 0x%.8llx\n", regs.rdi);
+        printf("%%rbp : 0x%.8llx\n", regs.rbp);
+        printf("%%orig_rax : 0x%.8llx\n", regs.orig_rax);
+        printf("%%rsp : 0x%.8llx\n", regs.rsp);
 }
